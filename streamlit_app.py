@@ -102,9 +102,9 @@ probability_percent = probability * 100
 st.metric(label="이직 확률", value=f"{probability_percent:.2f}%")
 
 # 확률에 따른 위험도 표시
-if probability_percent >= 30:
+if probability_percent >= 50:
     st.error("🚨 이직 위험 높음")
-elif probability_percent >= 15:
+elif probability_percent >= 30:
     st.warning("⚠️ 이직 위험 보통")
 else:
     st.success("✅ 이직 위험 낮음")
