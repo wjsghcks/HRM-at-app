@@ -45,7 +45,7 @@ inputs = {}
 st.sidebar.header("Enter Employee Details")
 
 # Input widgets for each variable
-inputs['Age'] = st.sidebar.slider("Age", 18, 60, 30)
+inputs['Age'] = st.sidebar.slider("Age ", 18, 60, 30)
 
 # BusinessTravel
 # Translated options: 1=Non-Travel, 2=Travel Rarely, 3=Travel Frequently
