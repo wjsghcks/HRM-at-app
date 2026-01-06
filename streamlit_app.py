@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
-import numpy as np # 로짓-확률 변환을 위해 필요
+import numpy as np # Needed for logit-probability conversion
 
-# 최종 모델(Model 9)에 포함된 변수 목록
+# List of variables included in the final model (Model 9)
 final_variables = [
     'Age', 'BusinessTravel', 'DistanceFromHome', 'EnvironmentSatisfaction',
     'JobInvolvement', 'JobLevel', 'JobSatisfaction', 'NumCompaniesWorked',
@@ -12,18 +12,18 @@ final_variables = [
     'YearsWithCurrManager'
 ]
 
-# 각 변수의 비표준화 계수(B) 
+# Unstandardized coefficients (B) for each variable
 coefficients = {
-    '(Constant)': 0.713, # 상수항 B 값
+    '(Constant)': 0.713, # Constant B value
     'Age': -0.004,
-    'BusinessTravel': 0.082, # 출장 변수 B 값 (숫자 코딩 기준)
+    'BusinessTravel': 0.082, # BusinessTravel B value (numeric coding)
     'DistanceFromHome': 0.004,
     'EnvironmentSatisfaction': -0.040,
     'JobInvolvement': -0.065,
     'JobLevel': -0.024,
     'JobSatisfaction': -0.037,
     'NumCompaniesWorked': 0.017,
-    'OverTime': 0.204, # OverTime_Num 변수 B 값
+    'OverTime': 0.204, # OverTime_Num B value
     'RelationshipSatisfaction': -0.022,
     'StockOptionLevel': -0.055,
     'TotalWorkingYears': -0.004,
@@ -35,76 +35,90 @@ coefficients = {
     'YearsWithCurrManager': -0.010
 }
 
-# --- 2. 앱 인터페이스 구성 ---
-st.title("🧑‍💼 직원 이직 확률 예측")
-st.write("직원의 정보를 입력하면 이직 확률을 예측합니다.")
+# --- 2. App Interface Configuration ---
+st.title("🧑‍💼 Employee Turnover Prediction")
+st.write("Enter employee details to predict the probability of turnover.")
 
-# 사용자 입력을 받을 딕셔너리 생성
+# Dictionary to store user inputs
 inputs = {}
 
-st.sidebar.header("직원 정보 입력")
+st.sidebar.header("Enter Employee Details")
 
-# 각 변수에 대한 입력 위젯 생성
-inputs['Age'] = st.sidebar.slider("나이 (Age)", 18, 60, 30) # 최소, 최대, 기본값
+# Input widgets for each variable
+inputs['Age'] = st.sidebar.slider("Age", 18, 60, 30)
 
 # BusinessTravel
-travel_options = {1: '출장 없음', 2: '가끔 출장', 3: '자주 출장'}
+# Translated options: 1=Non-Travel, 2=Travel Rarely, 3=Travel Frequently
+travel_options = {1: 'Non-Travel', 2: 'Travel Rarely', 3: 'Travel Frequently'}
 selected_travel_text = st.sidebar.selectbox(
-    "출장 빈도 (BusinessTravel)",
+    "Business Travel Frequency",
     options=list(travel_options.values()),
-    index=1 # 기본값을 '가끔 출장'으로
+    index=1 # Default: Travel Rarely
 )
-# 선택된 텍스트를 숫자로 변환
+# Convert selected text back to number
 inputs['BusinessTravel'] = [k for k, v in travel_options.items() if v == selected_travel_text][0]
 
 
-inputs['DistanceFromHome'] = st.sidebar.slider("집과의 거리 (km)", 1, 30, 5)
-inputs['EnvironmentSatisfaction'] = st.sidebar.select_slider(
-    "환경 만족도 (1: 낮음 ~ 4: 높음)", options=[1, 2, 3, 4], value=3)
-inputs['JobInvolvement'] = st.sidebar.select_slider(
-    "직무 몰입도 (1: 낮음 ~ 4: 높음)", options=[1, 2, 3, 4], value=3)
-inputs['JobLevel'] = st.sidebar.select_slider(
-    "직급 (1 ~ 5)", options=[1, 2, 3, 4, 5], value=2)
-inputs['JobSatisfaction'] = st.sidebar.select_slider(
-    "직무 만족도 (1: 낮음 ~ 4: 높음)", options=[1, 2, 3, 4], value=3)
-inputs['NumCompaniesWorked'] = st.sidebar.slider("타 회사 근무 경력 (횟수)", 0, 10, 2)
+inputs['DistanceFromHome'] = st.sidebar.slider("Distance From Home (km)", 1, 30, 5)
 
-# OverTime 처리 (숫자 코딩: 0=No, 1=Yes)
-overtime_option = st.sidebar.radio("초과근무 여부 (OverTime)", ('No', 'Yes'), index=0)
+inputs['EnvironmentSatisfaction'] = st.sidebar.select_slider(
+    "Environment Satisfaction (1: Low ~ 4: High)", options=[1, 2, 3, 4], value=3)
+
+inputs['JobInvolvement'] = st.sidebar.select_slider(
+    "Job Involvement (1: Low ~ 4: High)", options=[1, 2, 3, 4], value=3)
+
+inputs['JobLevel'] = st.sidebar.select_slider(
+    "Job Level (1 ~ 5)", options=[1, 2, 3, 4, 5], value=2)
+
+inputs['JobSatisfaction'] = st.sidebar.select_slider(
+    "Job Satisfaction (1: Low ~ 4: High)", options=[1, 2, 3, 4], value=3)
+
+inputs['NumCompaniesWorked'] = st.sidebar.slider("Num. of Companies Worked", 0, 10, 2)
+
+# OverTime Handling (0=No, 1=Yes)
+overtime_option = st.sidebar.radio("Overtime", ('No', 'Yes'), index=0)
 inputs['OverTime'] = 1 if overtime_option == 'Yes' else 0
 
 inputs['RelationshipSatisfaction'] = st.sidebar.select_slider(
-    "관계 만족도 (1: 낮음 ~ 4: 높음)", options=[1, 2, 3, 4], value=3)
+    "Relationship Satisfaction (1: Low ~ 4: High)", options=[1, 2, 3, 4], value=3)
+
 inputs['StockOptionLevel'] = st.sidebar.select_slider(
-    "스톡옵션 수준 (0 ~ 3)", options=[0, 1, 2, 3], value=0)
-inputs['TotalWorkingYears'] = st.sidebar.slider("총 근무 연수 (년)", 0, 40, 5)
-inputs['TrainingTimesLastYear'] = st.sidebar.slider("최근 1년 교육 횟수", 0, 6, 2)
+    "Stock Option Level (0 ~ 3)", options=[0, 1, 2, 3], value=0)
+
+inputs['TotalWorkingYears'] = st.sidebar.slider("Total Working Years", 0, 40, 5)
+
+inputs['TrainingTimesLastYear'] = st.sidebar.slider("Training Times Last Year", 0, 6, 2)
+
 inputs['WorkLifeBalance'] = st.sidebar.select_slider(
-    "워라밸 만족도 (1: 낮음 ~ 4: 높음)", options=[1, 2, 3, 4], value=3)
-inputs['YearsAtCompany'] = st.sidebar.slider("현 직장 근속 년수", 0, 40, 3)
-inputs['YearsInCurrentRole'] = st.sidebar.slider("현 직무 근속 년수", 0, 20, 2)
-inputs['YearsSinceLastPromotion'] = st.sidebar.slider("승진 후 경과 년수", 0, 20, 1)
-inputs['YearsWithCurrManager'] = st.sidebar.slider("현 관리자와 근무 년수", 0, 20, 2)
+    "Work-Life Balance (1: Low ~ 4: High)", options=[1, 2, 3, 4], value=3)
+
+inputs['YearsAtCompany'] = st.sidebar.slider("Years at Company", 0, 40, 3)
+
+inputs['YearsInCurrentRole'] = st.sidebar.slider("Years in Current Role", 0, 20, 2)
+
+inputs['YearsSinceLastPromotion'] = st.sidebar.slider("Years Since Last Promotion", 0, 20, 1)
+
+inputs['YearsWithCurrManager'] = st.sidebar.slider("Years with Current Manager", 0, 20, 2)
 
 
-# --- 3. 이직 확률 계산 ---
+# --- 3. Calculate Turnover Probability ---
 logit = coefficients['(Constant)']
 for var in final_variables:
-    if var in inputs and var != '(Constant)': # 상수항은 이미 더했으므로 제외
+    if var in inputs and var != '(Constant)': # Constant is already added
         logit += coefficients[var] * inputs[var]
 
-# 로짓을 확률로 변환 (Sigmoid 함수 사용)
+# Convert logit to probability (Sigmoid function)
 probability = 1 / (1 + np.exp(-logit))
 
-# --- 4. 결과 표시 ---
-st.subheader("📊 예측 결과")
+# --- 4. Display Results ---
+st.subheader("📊 Prediction Result")
 probability_percent = probability * 100
-st.metric(label="이직 확률", value=f"{probability_percent:.2f}%")
+st.metric(label="Turnover Probability", value=f"{probability_percent:.2f}%")
 
-# 확률에 따른 위험도 표시
+# Risk level indication based on probability
 if probability_percent >= 50:
-    st.error("🚨 이직 위험 높음")
+    st.error("🚨 High Turnover Risk")
 elif probability_percent >= 30:
-    st.warning("⚠️ 이직 위험 보통")
+    st.warning("⚠️ Moderate Turnover Risk")
 else:
-    st.success("✅ 이직 위험 낮음")
+    st.success("✅ Low Turnover Risk")
